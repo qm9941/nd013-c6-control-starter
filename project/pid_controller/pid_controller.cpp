@@ -47,11 +47,8 @@ void PID::UpdateError(double cte) {
 }
 
 double PID::TotalError() {
-   /**
-   * TODO: Calculate and return the total error
-    * The code should return a value in the interval [output_lim_mini, output_lim_maxi]
-   */
-    double control;
+   // Calculate controller output
+   double control;
 
    //P term
    control = _Error * _Kp;
@@ -65,6 +62,16 @@ double PID::TotalError() {
       control += ((_Error - _Error_previous) / _dt * _Kd);
    }
 
+   //Limit control
+   if (control > _output_lim_max)
+   {
+      control = _output_lim_max;
+   }
+   else if (control < _output_lim_min)
+   {
+      control = _output_lim_min;
+   }
+   
    return control;
 }
 
