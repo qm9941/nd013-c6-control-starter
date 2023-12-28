@@ -319,6 +319,7 @@ int main ()
 
           // Update the delta time with the previous command
           pid_throttle.UpdateDeltaTime(new_delta_time);
+          std::cout << "new_delta_time " << new_delta_time << std::endl;
 
           //Get desired speed
           double desired_speed;
@@ -328,11 +329,15 @@ int main ()
           {
             //v_points is empty -> set desired_speed to 0
             desired_speed = 0;
+            std::cout << "v_points are empty" << std::endl;
           }
           else
           {
             desired_speed = v_points.back();
           }
+
+          std::cout << "desired_speed " << desired_speed << std::endl;
+          std::cout << "velocity " << velocity << std::endl;
 
           // Compute error of speed
           // When driving forward and actual speed is lower than desired speed, the error will be positive -> PID controller will increase controller output
@@ -344,6 +349,9 @@ int main ()
           // Compute control to apply
           pid_throttle.UpdateError(error_throttle);
           double throttle = pid_throttle.TotalError();
+
+          std::cout << "error_throttle " << error_throttle << std::endl;
+          std::cout << "throttle " << throttle << std::endl;
 
           // Adapt the negative throttle to break
           if (throttle > 0.0) 
