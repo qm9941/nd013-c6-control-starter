@@ -8,6 +8,7 @@
 #include <vector>
 #include <iostream>
 #include <math.h>
+#include <limits>
 
 using namespace std;
 
@@ -57,7 +58,7 @@ double PID::TotalError() {
    control += (_Error_integral * _Ki);
 
    //D Term
-   if (_dt > DBL_EPSILON)
+   if (_dt > std::numeric_limits<double>::epsilon())
    {
       control += ((_Error - _Error_previous) / _dt * _Kd);
    }
