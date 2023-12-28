@@ -214,19 +214,14 @@ int main ()
   time_t timer;
   time(&prev_timer);
 
-  // initialize pid steer
-  /**
-  * TODO (Step 1): create pid (pid_steer) for steer command and initialize values
-  **/
-
-
-  // initialize pid throttle
-  /**
-  * TODO (Step 1): create pid (pid_throttle) for throttle command and initialize values
-  **/
-
+  //PID controller for lateral vehicle control, control output is limited to -1..1 so it matches CARLA simulator inputs
   PID pid_steer = PID();
+  pid_steer.Init(0.2, 0.006, 3.0, 1, -1);
+
+  //PID controller for longitudinal vehicle control, control output is limited to -1..1 so it matches CARLA simulator inputs
   PID pid_throttle = PID();
+  pid_throttle.Init(0.2, 0.006, 3.0, 1, -1);
+
 
   h.onMessage([&pid_steer, &pid_throttle, &new_delta_time, &timer, &prev_timer, &i, &prev_timer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
   {
@@ -295,7 +290,7 @@ int main ()
           double error_steer;
 
 
-          double steer_output;
+          double steer_output = 0;
 
           /**
           * TODO (step 3): compute the steer error (error_steer) from the position and the desired trajectory
@@ -338,8 +333,8 @@ int main ()
 
 
 
-          double throttle_output;
-          double brake_output;
+          double throttle_output = 0;
+          double brake_output = 0;
 
           /**
           * TODO (step 2): uncomment these lines
