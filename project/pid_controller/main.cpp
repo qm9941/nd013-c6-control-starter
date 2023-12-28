@@ -214,11 +214,11 @@ int main ()
   time_t timer;
   time(&prev_timer);
 
-  //PID controller for lateral vehicle control, control output is limited to -1..1 so it matches CARLA simulator inputs
+  //PID controller for lateral vehicle control, control output is limited to [-1.2, 1.2]
   PID pid_steer = PID();
-  pid_steer.Init(0.2, 0.006, 3.0, 1, -1);
+  pid_steer.Init(0.2, 0.006, 3.0, 1.2, -1.2);
 
-  //PID controller for longitudinal vehicle control, control output is limited to -1..1 so it matches CARLA simulator inputs
+  //PID controller for longitudinal vehicle control, control output is limited to [-1, 1]
   PID pid_throttle = PID();
   pid_throttle.Init(0.2, 0.006, 3.0, 1, -1);
 
@@ -317,50 +317,55 @@ int main ()
           // Throttle control
           ////////////////////////////////////////
 
-          /**
-          * TODO (step 2): uncomment these lines
-          **/
-//           // Update the delta time with the previous command
-//           pid_throttle.UpdateDeltaTime(new_delta_time);
+          // Update the delta time with the previous command
+          pid_throttle.UpdateDeltaTime(new_delta_time);
+
+          //Get desired speed
+          double desired_speed;
+
+          //The last point of v_points vector contains the velocity computed by the path planner.
+          if (v_points.empty())
+          {
+            //v_points is empty -> set desired_speed to 0
+            desired_speed = 0;
+          }
+          else
+          {
+            desired_speed = v_points.back();
+          }
 
           // Compute error of speed
-          double error_throttle;
-          /**
-          * TODO (step 2): compute the throttle error (error_throttle) from the position and the desired speed
-          **/
-          // modify the following line for step 2
-          error_throttle = 0;
-
-
+          // When driving forward and actual speed is lower than desired speed, the error will be positive -> PID controller will increase controller output
+          double error_throttle = desired_speed - velocity;
 
           double throttle_output = 0;
           double brake_output = 0;
 
-          /**
-          * TODO (step 2): uncomment these lines
-          **/
-//           // Compute control to apply
-//           pid_throttle.UpdateError(error_throttle);
-//           double throttle = pid_throttle.TotalError();
+          // Compute control to apply
+          pid_throttle.UpdateError(error_throttle);
+          double throttle = pid_throttle.TotalError();
 
-//           // Adapt the negative throttle to break
-//           if (throttle > 0.0) {
-//             throttle_output = throttle;
-//             brake_output = 0;
-//           } else {
-//             throttle_output = 0;
-//             brake_output = -throttle;
-//           }
+          // Adapt the negative throttle to break
+          if (throttle > 0.0) 
+          {
+            throttle_output = throttle;
+            brake_output = 0;
+          } 
+          else 
+          {
+            throttle_output = 0;
+            brake_output = -throttle;
+          }
 
-//           // Save data
-//           file_throttle.seekg(std::ios::beg);
-//           for(int j=0; j < i - 1; ++j){
-//               file_throttle.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
-//           }
-//           file_throttle  << i ;
-//           file_throttle  << " " << error_throttle;
-//           file_throttle  << " " << brake_output;
-//           file_throttle  << " " << throttle_output << endl;
+          // Save data
+          file_throttle.seekg(std::ios::beg);
+          for(int j=0; j < i - 1; ++j){
+            file_throttle.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+          }
+          file_throttle  << i ;
+          file_throttle  << " " << error_throttle;
+          file_throttle  << " " << brake_output;
+          file_throttle  << " " << throttle_output << endl;
 
 
           // Send control
