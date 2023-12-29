@@ -376,15 +376,15 @@ int main (int argc, char* argv[])
             T(1,2) = y_position;
 
             Eigen::MatrixXd P(3,1);
-            P(1,0) = x_point;
-            P(2,0) = y_point;
-            P(3,0) = 1;
+            P(0,0) = x_point;
+            P(1,0) = y_point;
+            P(2,0) = 1;
 
             Eigen::MatrixXd TP;
             TP = M.inverse() * P;
 
             // calculate cross track error
-            error_steer = TP(2,0) - y_position;
+            error_steer = TP(1,0) - y_position;
           }
 
           // Compute control to apply
