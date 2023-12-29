@@ -195,7 +195,7 @@ void set_obst(vector<double> x_points, vector<double> y_points, vector<State>& o
 	obst_flag = true;
 }
 
-int main ()
+int main (int argc, char* argv[])
 {
   cout << "starting server" << endl;
   uWS::Hub h;
@@ -214,13 +214,36 @@ int main ()
   time_t timer;
   time(&prev_timer);
 
+  //Default controller parameters
+  double t_kp = 0;
+  double t_ki = 0;
+  double t_kd = 0;
+  double s_kp = 0;
+  double s_ki = 0;
+  double s_kd = 0;
+
+  if (argc == 7)
+  {
+    //Use controller parameters passed as arguments
+    t_kp = std::stod(argv[1]);
+    t_ki = std::stod(argv[2]);
+    t_kd = std::stod(argv[3]);
+    s_kp = std::stod(argv[4]);
+    s_ki = std::stod(argv[5]);
+    s_kd = std::stod(argv[6]);
+  }
+
+  //print controller parameters
+  std::cout << "Throttle controller parameters kp=" << t_kp << "  ki=" << t_ki << "  kd=" << t_kd << std::endl;
+  std::cout << "Steering controller parameters kp=" << s_kp << "  ki=" << s_ki << "  kd=" << s_kd << std::endl;
+
   //PID controller for lateral vehicle control, control output is limited to [-1.2, 1.2]
   PID pid_steer = PID();
-  pid_steer.Init(0.2, 0.006, 3.0, 1.2, -1.2);
+  pid_steer.Init(s_kp, s_ki, s_kd, 1.2, -1.2);
 
   //PID controller for longitudinal vehicle control, control output is limited to [-1, 1]
   PID pid_throttle = PID();
-  pid_throttle.Init(0.2, 0.006, 3.0, 1, -1);
+  pid_throttle.Init(t_kp, t_ki, t_kd, 1, -1);
 
 
   h.onMessage([&pid_steer, &pid_throttle, &new_delta_time, &timer, &prev_timer, &i, &prev_timer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
@@ -280,38 +303,39 @@ int main ()
           // Steering control
           ////////////////////////////////////////
 
-          /**
-          * TODO (step 3): uncomment these lines
-          **/
-//           // Update the delta time with the previous command
-//           pid_steer.UpdateDeltaTime(new_delta_time);
+          // Update the delta time with the previous command
+          pid_steer.UpdateDeltaTime(new_delta_time);
 
-          // Compute steer error
+          // Steer error
           double error_steer;
 
+          // compute the steer error (error_steer) from the position and the desired trajectory:
 
+          //The last point of x_points and y_points vector contains the desired position computed by the path planner.
+          if (x_points.empty() || y_points.empty())
+          {
+            //v_points is empty -> set error_steer = 0
+            error_steer = 0;
+          }
+          else
+          {
+            // direction to get from current vehicle position to next trajectory point minus the current yqa orientation of the vecihle
+            error_steer = atan2(y_points.back() - y_position, x_points.back() - x_position) - yaw;
+          }
+
+           // Compute control to apply
           double steer_output = 0;
+          pid_steer.UpdateError(error_steer);
+          steer_output = pid_steer.TotalError();
 
-          /**
-          * TODO (step 3): compute the steer error (error_steer) from the position and the desired trajectory
-          **/
-//           error_steer = 0;
-
-          /**
-          * TODO (step 3): uncomment these lines
-          **/
-//           // Compute control to apply
-//           pid_steer.UpdateError(error_steer);
-//           steer_output = pid_steer.TotalError();
-
-//           // Save data
-//           file_steer.seekg(std::ios::beg);
-//           for(int j=0; j < i - 1; ++j) {
-//               file_steer.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-//           }
-//           file_steer  << i ;
-//           file_steer  << " " << error_steer;
-//           file_steer  << " " << steer_output << endl;
+          // Save data
+          file_steer.seekg(std::ios::beg);
+          for(int j=0; j < i - 1; ++j) {
+            file_steer.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+          }
+          file_steer  << i ;
+          file_steer  << " " << error_steer;
+          file_steer  << " " << steer_output << endl;
 
           ////////////////////////////////////////
           // Throttle control
@@ -319,7 +343,6 @@ int main ()
 
           // Update the delta time with the previous command
           pid_throttle.UpdateDeltaTime(new_delta_time);
-          std::cout << "new_delta_time " << new_delta_time << std::endl;
 
           //Get desired speed
           double desired_speed;
@@ -329,15 +352,11 @@ int main ()
           {
             //v_points is empty -> set desired_speed to 0
             desired_speed = 0;
-            std::cout << "v_points are empty" << std::endl;
           }
           else
           {
             desired_speed = v_points.back();
           }
-
-          std::cout << "desired_speed " << desired_speed << std::endl;
-          std::cout << "velocity " << velocity << std::endl;
 
           // Compute error of speed
           // When driving forward and actual speed is lower than desired speed, the error will be positive -> PID controller will increase controller output
@@ -349,9 +368,6 @@ int main ()
           // Compute control to apply
           pid_throttle.UpdateError(error_throttle);
           double throttle = pid_throttle.TotalError();
-
-          std::cout << "error_throttle " << error_throttle << std::endl;
-          std::cout << "throttle " << throttle << std::endl;
 
           // Adapt the negative throttle to break
           if (throttle > 0.0) 

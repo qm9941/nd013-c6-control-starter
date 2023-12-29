@@ -23,8 +23,8 @@ void PID::Init(double Kp, double Ki, double Kd, double output_lim_max, double ou
    _Kd = Kd;
 
    // Initialize PID limits
-   _output_lim_max = _output_lim_max;
-   _output_lim_min = _output_lim_min;
+   _output_lim_max = output_lim_max;
+   _output_lim_min = output_lim_min;
 
    // Initialize PID errors
    _Error = 0;
