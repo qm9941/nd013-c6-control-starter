@@ -248,7 +248,7 @@ int main (int argc, char* argv[])
   pid_throttle.Init(t_kp, t_ki, t_kd, 1, -1);
 
 
-  h.onMessage([&pid_steer, &pid_throttle, &new_delta_time, &init_sim_time, &i](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
+  h.onMessage([&pid_steer, &pid_throttle, &new_delta_time, &init_sim_time, &last_sim_time, &i](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
   {
         auto s = hasData(data);
 
