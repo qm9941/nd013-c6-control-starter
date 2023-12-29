@@ -312,21 +312,22 @@ int main (int argc, char* argv[])
           // compute the steer error (error_steer) from the position and the desired trajectory:
 
           //The last point of x_points and y_points vector contains the desired position computed by the path planner.
-          double x_point, y_point;
+          double x_point = 0
+          double y_point = 0;
+          double target_heading = 0;
 
           if (x_points.empty() || y_points.empty())
           {
             //v_points is empty -> set error_steer = 0
             error_steer = 0;
-            x_point = 0;
-            y_point = 0;
           }
           else
           {
             // direction to get from current vehicle position to next trajectory point minus the current yqa orientation of the vecihle
             x_point = x_points.back();
             y_point = y_points.back();
-            error_steer = atan2(y_point - y_position, x_point - x_position) - yaw;
+            target_heading = atan2(y_point - y_position, x_point - x_position);
+            error_steer =  target_heading - yaw;
           }
 
            // Compute control to apply
@@ -342,11 +343,22 @@ int main (int argc, char* argv[])
           file_steer  << i ;
           file_steer  << " " << error_steer;
           file_steer  << " " << steer_output;
+          file_steer  << " " << new_delta_time;
           file_steer  << " " << x_point;
           file_steer  << " " << y_point;
           file_steer  << " " << x_position;
           file_steer  << " " << y_position;
-          file_steer  << " " << yaw << endl;
+          file_steer  << " " << target_heading;
+          file_steer  << " " << yaw;
+          file_steer  << " " << x_points.size();
+
+          for (int i=0; i<x_points.size(); i++)
+          {
+            file_steer  << " " << x_points[i] << " " << y_points[i];
+          }
+
+          file_steer  << endl;
+
 
           ////////////////////////////////////////
           // Throttle control
