@@ -54,6 +54,8 @@
 #include <cmath>
 #include <time.h>
 
+#include <Eigen/Dense>
+
 using namespace std;
 using json = nlohmann::json;
 
