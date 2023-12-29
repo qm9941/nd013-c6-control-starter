@@ -210,9 +210,11 @@ int main (int argc, char* argv[])
   file_throttle.open("throttle_pid_data.txt", std::ofstream::out | std::ofstream::trunc);
   file_throttle.close();
 
-  time_t prev_timer;
-  time_t timer;
-  time(&prev_timer);
+  //time_t prev_timer;
+  //time_t timer;
+  //time(&prev_timer);
+  double last_sim_time;
+  bool init_sim_time = true;
 
   //Default controller parameters
   double t_kp = 0;
@@ -295,9 +297,21 @@ int main (int argc, char* argv[])
           path_planner(x_points, y_points, v_points, yaw, velocity, goal, is_junction, tl_state, spirals_x, spirals_y, spirals_v, best_spirals);
 
           // Save time and compute delta time
-          time(&timer);
-          new_delta_time = difftime(timer, prev_timer);
-          prev_timer = timer;
+          //time(&timer);
+          //new_delta_time = difftime(timer, prev_timer);
+          //prev_timer = timer;
+
+          //Use sim time instead of wall time
+          if (init_sim_time)
+          {
+            new_delta_time = 0;
+            last_sim_time = sim_time;
+          }
+          else
+          {
+            new_delta_time = sim_time - last_sim_time;
+            last_sim_time = sim_time;
+          }
 
           ////////////////////////////////////////
           // Steering control
@@ -312,7 +326,7 @@ int main (int argc, char* argv[])
           // compute the steer error (error_steer) from the position and the desired trajectory:
 
           //The last point of x_points and y_points vector contains the desired position computed by the path planner.
-          double x_point = 0
+          double x_point = 0;
           double y_point = 0;
           double target_heading = 0;
 
