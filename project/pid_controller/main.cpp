@@ -320,7 +320,7 @@ int main (int argc, char* argv[])
 
           // Update the delta time with the previous command
           pid_steer.UpdateDeltaTime(new_delta_time);
-
+/*
           // Steer error
           double error_steer;
 
@@ -344,8 +344,50 @@ int main (int argc, char* argv[])
             target_heading = atan2(y_point - y_position, x_point - x_position);
             error_steer =  target_heading - yaw;
           }
+*/
+          // Steer error
+          double error_steer;
 
-           // Compute control to apply
+          /*
+           * compute the steer error (error_steer) from the position and the desired trajectory by calulating the lateral distance to trajectory point
+           */
+          //The last point of x_points and y_points vector contains the desired position computed by the path planner.
+          double x_point = 0;
+          double y_point = 0;
+          double target_heading = 0;
+
+          if (x_points.empty() || y_points.empty())
+          {
+            //v_points is empty -> set error_steer = 0
+            error_steer = 0;
+          }
+          else
+          {
+            x_point = x_points.back();
+            y_point = y_points.back();
+
+            // transform trajectory point to vehicle coordinates
+            Eigen::MatrixXd T = Eigen::MatrixXd::Identity(3,3);
+            T(0,0) = std::cos(yaw);
+            T(0,1) = -std::sin(yaw);
+            T(0,2) = x_position;
+            T(1,0) = std::sin(yaw);
+            T(1,1) = std::cos(yaw);
+            T(1,2) = y_position;
+
+            Eigen::MatrixXd P(3,1);
+            P(1,0) = x_point;
+            P(2,0) = y_point;
+            P(3,0) = 1;
+
+            Eigen::MatrixXd TP;
+            TP = M.inverse() * P;
+
+            // calculate cross track error
+            error_steer = TP(2,0) - y_position;
+          }
+
+          // Compute control to apply
           double steer_output = 0;
           pid_steer.UpdateError(error_steer);
           steer_output = pid_steer.TotalError();
@@ -363,8 +405,8 @@ int main (int argc, char* argv[])
           file_steer  << " " << y_point;
           file_steer  << " " << x_position;
           file_steer  << " " << y_position;
-          file_steer  << " " << target_heading;
-          file_steer  << " " << yaw;
+          //file_steer  << " " << target_heading;
+          //file_steer  << " " << yaw;
           file_steer  << " " << x_points.size();
 
           for (int i=0; i<x_points.size(); i++)
