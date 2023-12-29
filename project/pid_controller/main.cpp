@@ -383,10 +383,10 @@ int main (int argc, char* argv[])
             P(2,0) = 1;
 
             Eigen::MatrixXd TP;
-            TP = M.inverse() * P;
+            TP = T.inverse() * P;
 
-            // calculate cross track error
-            error_steer = TP(1,0) - y_position;
+            // cross track error is transformed trajectory-coordinate as vehile is at the orgin of it's coordinate system
+            error_steer = TP(1,0)
           }
 
           // Compute control to apply
@@ -407,8 +407,7 @@ int main (int argc, char* argv[])
           file_steer  << " " << y_point;
           file_steer  << " " << x_position;
           file_steer  << " " << y_position;
-          //file_steer  << " " << target_heading;
-          //file_steer  << " " << yaw;
+          file_steer  << " " << yaw;
           file_steer  << " " << x_points.size();
 
           for (int i=0; i<x_points.size(); i++)
