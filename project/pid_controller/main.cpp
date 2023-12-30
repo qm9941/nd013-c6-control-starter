@@ -54,8 +54,6 @@
 #include <cmath>
 #include <time.h>
 
-#include <Eigen/Dense>
-
 using namespace std;
 using json = nlohmann::json;
 
@@ -218,6 +216,7 @@ int main (int argc, char* argv[])
   double last_sim_time;
   bool init_sim_time = true;
 
+
   //Default controller parameters
   double t_kp = 0;
   double t_ki = 0;
@@ -249,7 +248,6 @@ int main (int argc, char* argv[])
   PID pid_throttle = PID();
   pid_throttle.Init(t_kp, t_ki, t_kd, 1, -1);
 
-
   h.onMessage([&pid_steer, &pid_throttle, &new_delta_time, &init_sim_time, &last_sim_time, &i](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
   {
         auto s = hasData(data);
@@ -280,12 +278,13 @@ int main (int argc, char* argv[])
           double y_position = data["location_y"];
           double z_position = data["location_z"];
 
-          //if(!have_obst){
-          if(true){
-          	vector<double> x_obst = data["obst_x"];
-          	vector<double> y_obst = data["obst_y"];
-          	set_obst(x_obst, y_obst, obstacles, have_obst);
-          }
+        //if(!have_obst){
+        	vector<double> x_obst = data["obst_x"];
+        	vector<double> y_obst = data["obst_y"];
+
+          int noObstacles;
+         	set_obst(x_obst, y_obst, obstacles, have_obst);
+          noObstacles = obstacles.size();
 
           State goal;
           goal.location.x = waypoint_x;
@@ -300,10 +299,6 @@ int main (int argc, char* argv[])
           path_planner(x_points, y_points, v_points, yaw, velocity, goal, is_junction, tl_state, spirals_x, spirals_y, spirals_v, best_spirals);
 
           // Save time and compute delta time
-          //time(&timer);
-          //new_delta_time = difftime(timer, prev_timer);
-          //prev_timer = timer;
-
           //Use sim time instead of wall time
           if (init_sim_time)
           {
@@ -321,47 +316,21 @@ int main (int argc, char* argv[])
           // Steering control
           ////////////////////////////////////////
 
+          /**
+          * TODO (step 3): uncomment these lines
+          **/
           // Update the delta time with the previous command
           pid_steer.UpdateDeltaTime(new_delta_time);
 
-          /* 
-          * Find trajectory point, which is closest to vehicle
-          */
-          double target_heading = 0;
-          int idx_closest_point = -1;
-
-          if (x_points.empty() || y_points.empty())
-          {
-            //v_points is empty -> set error_steer = 0
-            idx_closest_point = -1;
-          }
-          else
-          {
-            double distance_sq_min = std::numeric_limits<double>::max();
-
-            //Search closest point in trajectory
-            for (int i=0; i<x_points.size(); i++) 
-            {
-              double dist_squared;
-              dist_squared = std::pow(x_points[i] - x_position, 2) + std::pow(y_points[i] - y_position, 2);
-
-              if (dist_squared < distance_sq_min)
-              {
-                distance_sq_min = dist_squared;
-                idx_closest_point = i;
-              }
-            }
-
-            idx_closest_point = x_points.size() - 1;
-          }
-          
-          // Steer error
+          // Compute steer error
           double error_steer;
+          double target_heading = 0;
+          double steer_output;
           double x_point = 0;
           double y_point = 0;
 
           // compute the steer error (error_steer) from the position and the closest trajectory point
-          if (idx_closest_point == -1)
+          if (x_points.empty() || y_points.empty())
           {
             //no trajectory points available
             error_steer = 0;
@@ -369,14 +338,14 @@ int main (int argc, char* argv[])
           else
           {            
             // direction to get from current vehicle position to closest trajectory point minus the current yqa orientation of the vecihle
-            x_point = x_points[idx_closest_point];
-            y_point = y_points[idx_closest_point];
+            x_point = x_points.back();
+            y_point = y_points.back();
             target_heading = atan2(y_point - y_position, x_point - x_position);
             error_steer =  target_heading - yaw;
           }
 
+
           // Compute control to apply
-          double steer_output = 0;
           pid_steer.UpdateError(error_steer);
           steer_output = pid_steer.TotalError();
 
@@ -395,19 +364,12 @@ int main (int argc, char* argv[])
           file_steer  << " " << y_position;
           file_steer  << " " << target_heading;
           file_steer  << " " << yaw;
-          file_steer  << " " << idx_closest_point;
           file_steer  << " " << velocity;
-          file_steer  << " " << obstacles.size();
+          file_steer  << " " << noObstacles;
+          file_steer  << " " << x_obst.size();
           file_steer  << " " << have_obst;
           file_steer  << " " << x_points.size();
-
-          //for (int i=0; i<x_points.size(); i++)
-          //{
-          //  file_steer  << " " << x_points[i] << " " << y_points[i];
-          //}
-
           file_steer  << endl;
-
 
           ////////////////////////////////////////
           // Throttle control
@@ -420,14 +382,14 @@ int main (int argc, char* argv[])
           double desired_speed;
 
           //The closest point of v_points vector contains the velocity computed by the path planner.
-          if (idx_closest_point == -1)
+          if (v_points.empty())
           {
             //v_points is empty -> set desired_speed to 0
             desired_speed = 0;
           }
           else
           {
-            desired_speed = v_points[idx_closest_point];
+            desired_speed = v_points.back();
           }
 
           // Compute error of speed
@@ -461,8 +423,9 @@ int main (int argc, char* argv[])
           file_throttle  << i ;
           file_throttle  << " " << error_throttle;
           file_throttle  << " " << brake_output;
-          file_throttle  << " " << throttle_output << endl;
-
+          file_throttle  << " " << throttle_output;
+          file_throttle  << " " << new_delta_time;
+          file_throttle  << endl;
 
           // Send control
           json msgJson;
@@ -481,7 +444,7 @@ int main (int argc, char* argv[])
 
           //  min point threshold before doing the update
           // for high update rate use 19 for slow update rate use 4
-          msgJson["update_point_thresh"] = 20;
+          msgJson["update_point_thresh"] = 16;
 
           auto msg = msgJson.dump();
 
