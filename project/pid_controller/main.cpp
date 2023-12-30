@@ -322,71 +322,54 @@ int main (int argc, char* argv[])
 
           // Update the delta time with the previous command
           pid_steer.UpdateDeltaTime(new_delta_time);
-/*
-          // Steer error
-          double error_steer;
 
-          // compute the steer error (error_steer) from the position and the desired trajectory:
-
-          //The last point of x_points and y_points vector contains the desired position computed by the path planner.
-          double x_point = 0;
-          double y_point = 0;
+          /* 
+          * Find trajectory point, which is closest to vehicle
+          */
           double target_heading = 0;
+          int idx_closest_point = -1;
 
           if (x_points.empty() || y_points.empty())
           {
             //v_points is empty -> set error_steer = 0
-            error_steer = 0;
+            idx_closest_point = -1;
           }
           else
           {
-            // direction to get from current vehicle position to next trajectory point minus the current yqa orientation of the vecihle
-            x_point = x_points.back();
-            y_point = y_points.back();
+            double distance_sq_min = std::numeric_limits<double>::max();
+
+            //Search closest point in trajectory
+            for (int i; i<points_x.size(); i++) 
+            {
+              double dist_squared;
+              dist_squared = std::pow(x_points[i] - x_position, 2) + std::pow(y_points[i] - y_position, 2);
+
+              if (dist_squared < distance_sq_min)
+              {
+                distance_sq_min = dist_squared;
+                idx_closest_point = i;
+              }
+            }
+          }
+          
+          // Steer error
+          double error_steer;
+          double x_point = 0;
+          double y_point = 0;
+
+          // compute the steer error (error_steer) from the position and the closest trajectory point
+          if (idx_closest_point == -1)
+          {
+            //no trajectory points available
+            error_steer = 0;
+          }
+          else
+          {            
+            // direction to get from current vehicle position to closest trajectory point minus the current yqa orientation of the vecihle
+            x_point = x_points[idx_closest_point];
+            y_point = y_points[idx_closest_point];
             target_heading = atan2(y_point - y_position, x_point - x_position);
             error_steer =  target_heading - yaw;
-          }
-*/
-          // Steer error
-          double error_steer;
-
-          /*
-           * compute the steer error (error_steer) from the position and the desired trajectory by calulating the lateral distance to trajectory point
-           */
-          //The last point of x_points and y_points vector contains the desired position computed by the path planner.
-          double x_point = 0;
-          double y_point = 0;
-          double target_heading = 0;
-
-          if (x_points.empty() || y_points.empty())
-          {
-            //v_points is empty -> set error_steer = 0
-            error_steer = 0;
-          }
-          else
-          {
-            x_point = x_points.back();
-            y_point = y_points.back();
-
-            // transform trajectory point to vehicle coordinates
-            Eigen::MatrixXd T = Eigen::MatrixXd::Identity(3,3);
-            T(0,0) = std::cos(yaw);
-            T(0,1) = -std::sin(yaw);
-            T(0,2) = x_position;
-            T(1,0) = std::sin(yaw);
-            T(1,1) = std::cos(yaw);
-            T(1,2) = y_position;
-
-            Eigen::MatrixXd P(3,1);
-            P(0,0) = x_point;
-            P(1,0) = y_point;
-            P(2,0) = 1;
-
-            Eigen::MatrixXd TP;
-            TP = T.inverse() * P;
-
-            // cross track error is transformed trajectory-coordinate as vehile is at the orgin of it's coordinate system
-            error_steer = TP(1,0)
           }
 
           // Compute control to apply
@@ -407,7 +390,11 @@ int main (int argc, char* argv[])
           file_steer  << " " << y_point;
           file_steer  << " " << x_position;
           file_steer  << " " << y_position;
+          file_steer  << " " << target_heading;
           file_steer  << " " << yaw;
+          file_steer  << " " << idx_closest_point;
+          file_steer  << " " << velocity;
+          
           file_steer  << " " << x_points.size();
 
           for (int i=0; i<x_points.size(); i++)
@@ -428,15 +415,15 @@ int main (int argc, char* argv[])
           //Get desired speed
           double desired_speed;
 
-          //The last point of v_points vector contains the velocity computed by the path planner.
-          if (v_points.empty())
+          //The closest point of v_points vector contains the velocity computed by the path planner.
+          if (idx_closest_point == -1)
           {
             //v_points is empty -> set desired_speed to 0
             desired_speed = 0;
           }
           else
           {
-            desired_speed = v_points.back();
+            desired_speed = v_points[idx_closest_point];
           }
 
           // Compute error of speed
