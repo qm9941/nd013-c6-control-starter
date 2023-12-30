@@ -280,7 +280,8 @@ int main (int argc, char* argv[])
           double y_position = data["location_y"];
           double z_position = data["location_z"];
 
-          if(!have_obst){
+          //if(!have_obst){
+          if(true){
           	vector<double> x_obst = data["obst_x"];
           	vector<double> y_obst = data["obst_y"];
           	set_obst(x_obst, y_obst, obstacles, have_obst);
@@ -396,7 +397,7 @@ int main (int argc, char* argv[])
           file_steer  << " " << yaw;
           file_steer  << " " << idx_closest_point;
           file_steer  << " " << velocity;
-          file_steer  << " " << obstacles;
+          file_steer  << " " << obstacles.size();
           file_steer  << " " << have_obst;
           file_steer  << " " << x_points.size();
 
