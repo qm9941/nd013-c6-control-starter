@@ -339,7 +339,7 @@ int main (int argc, char* argv[])
             double distance_sq_min = std::numeric_limits<double>::max();
 
             //Search closest point in trajectory
-            for (int i; i<x_points.size(); i++) 
+            for (int i=0; i<x_points.size(); i++) 
             {
               double dist_squared;
               dist_squared = std::pow(x_points[i] - x_position, 2) + std::pow(y_points[i] - y_position, 2);
@@ -350,6 +350,8 @@ int main (int argc, char* argv[])
                 idx_closest_point = i;
               }
             }
+
+            idx_closest_point = x_points.size() - 1;
           }
           
           // Steer error
@@ -394,13 +396,14 @@ int main (int argc, char* argv[])
           file_steer  << " " << yaw;
           file_steer  << " " << idx_closest_point;
           file_steer  << " " << velocity;
-          
+          file_steer  << " " << obstacles;
+          file_steer  << " " << have_obst;
           file_steer  << " " << x_points.size();
 
-          for (int i=0; i<x_points.size(); i++)
-          {
-            file_steer  << " " << x_points[i] << " " << y_points[i];
-          }
+          //for (int i=0; i<x_points.size(); i++)
+          //{
+          //  file_steer  << " " << x_points[i] << " " << y_points[i];
+          //}
 
           file_steer  << endl;
 
@@ -477,7 +480,7 @@ int main (int argc, char* argv[])
 
           //  min point threshold before doing the update
           // for high update rate use 19 for slow update rate use 4
-          msgJson["update_point_thresh"] = 16;
+          msgJson["update_point_thresh"] = 20;
 
           auto msg = msgJson.dump();
 
