@@ -339,7 +339,7 @@ int main (int argc, char* argv[])
             double distance_sq_min = std::numeric_limits<double>::max();
 
             //Search closest point in trajectory
-            for (int i; i<points_x.size(); i++) 
+            for (int i; i<x_points.size(); i++) 
             {
               double dist_squared;
               dist_squared = std::pow(x_points[i] - x_position, 2) + std::pow(y_points[i] - y_position, 2);
